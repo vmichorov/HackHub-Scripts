@@ -1,23 +1,53 @@
 async function Main() {
-  const args = Shell.GetArgs();
-  if (!args.length || args.length !== 2) {
-    println({ text: "Usage: exploit <ip> <port>", color: "gray" });
-    return;
-  }
-
-  const host = args[0];
+  const host = await prompt("Enter IP Address: ");
+  Shell.lock();
   if (!Networking.IsIp(host)) {
     println({ text: "Error: IP is invalid!", color: "red" });
     return;
   }
-  const port = parseInt(args[1]);
 
+  println("Fetching subnet information...");
   const subnet = await Networking.GetSubnet(host);
   if (!subnet) {
-    println({ text: "Error: Subnet not found!", color: "red" });
+    println({ text: "Error: Couldn't find subnet!", color: "red" });
     return;
   }
-  const data = await subnet.GetPortData(port);
+
+  println("Fetching ports...");
+  const ports = await subnet.GetPorts();
+  if (!ports.length) {
+    println({ text: "Info: No ports found!", color: "yellow" });
+    return;
+  }
+
+  println("Scanning ports...");
+  const portsData: Networking.Port[] = [];
+  const portsStatuses: Record<number, boolean> = {};
+  for (let p of ports) {
+    const pData = await subnet.GetPortData(p);
+    const isOpen = await subnet.PingPort(p);
+    portsStatuses[p] = isOpen;
+    if (pData) {
+      portsData.push(pData);
+    }
+  }
+  printTable(
+    portsData
+      .sort((a, b) => a.internal - b.internal)
+      .map((p) => ({
+        PORT: p.external,
+        STATUS: portsStatuses[p.internal] ? "OPEN" : "CLOSED",
+        TARGET: p.target!,
+        SERVICE: p.service!,
+        VERSION: p.version!,
+      })),
+  );
+
+  Shell.unlock();
+  const port = parseInt(await prompt("Select Port To Exploit: "));
+  Shell.lock();
+
+  const data = portsData.find((p) => p.external === port);
   if (!data) {
     println({ text: "Error: Couldn't get port data!", color: "red" });
     return;
@@ -47,7 +77,9 @@ async function Main() {
     })),
   );
 
+  Shell.unlock();
   const input = parseInt(await prompt("Select Exploit: "));
+  Shell.lock();
   target = modules[input];
 
   println(`Using exploit ${target.name}`);
@@ -60,6 +92,7 @@ async function Main() {
 
   println("Exploiting Service...");
   await ms.Exploit();
+  Shell.unlock();
 }
 
 Main();
