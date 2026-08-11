@@ -41,8 +41,8 @@ async function Main() {
         PORT: p.external,
         STATUS: portsStatuses[p.internal] ? "OPEN" : "CLOSED",
         TARGET: p.target!,
-        SERVICE: p.service!,
-        VERSION: p.version!,
+        SERVICE: p.service ? p.service : "",
+        VERSION: p.version ? p.version : "",
       })),
   );
 
@@ -58,6 +58,11 @@ async function Main() {
   }
 
   const service = data.service;
+  if (!service) {
+    println({ text: "Error: Service not found!", color: "red" });
+    Shell.unlock();
+    return;
+  }
   const serviceVersion = data.version;
   if (!serviceVersion) {
     println({ text: "Error: Version not found!", color: "red" });
