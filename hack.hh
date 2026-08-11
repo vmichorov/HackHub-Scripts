@@ -3,6 +3,7 @@ async function Main() {
   Shell.lock();
   if (!Networking.IsIp(host)) {
     println({ text: "Error: IP is invalid!", color: "red" });
+    Shell.unlock();
     return;
   }
 
@@ -10,6 +11,7 @@ async function Main() {
   const subnet = await Networking.GetSubnet(host);
   if (!subnet) {
     println({ text: "Error: Couldn't find subnet!", color: "red" });
+    Shell.unlock();
     return;
   }
 
@@ -17,6 +19,7 @@ async function Main() {
   const ports = await subnet.GetPorts();
   if (!ports.length) {
     println({ text: "Info: No ports found!", color: "yellow" });
+    Shell.unlock();
     return;
   }
 
@@ -50,6 +53,7 @@ async function Main() {
   const data = portsData.find((p) => p.external === port);
   if (!data) {
     println({ text: "Error: Couldn't get port data!", color: "red" });
+    Shell.unlock();
     return;
   }
 
@@ -57,6 +61,7 @@ async function Main() {
   const serviceVersion = data.version;
   if (!serviceVersion) {
     println({ text: "Error: Version not found!", color: "red" });
+    Shell.unlock();
     return;
   }
   const version = serviceVersion.split(" ")[1];
